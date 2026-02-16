@@ -9,6 +9,8 @@ _main() {
   local SDR="build.xcarchive/dSYMs"
   local SYM="$APP.app.dSYM"
   local BVR=$(grep 'MARKETING' Build.xcconfig | awk '{ print $3 }')
+  local GB=$(git branch --show-current | sed 's/\//_/g')
+  local GS=$(git rev-parse --short HEAD)
   local BARGS="archive\
  -scheme $APP\
  -archivePath build.xcarchive\
@@ -16,12 +18,11 @@ _main() {
   if [[ "$BDT" == "release" ]]; then
     local VER="$BVR"
     local ARGS="$BARGS"
-    local OPA="build/$APP.ipa"
   else
-    local VER="$BVR-nightly.$(date +'%y.%m.%d_%H.%M')+$(git rev-parse --short HEAD)"
+    local VER="$(date +'%y%m%d%H%M')+$BVR+$GB+$GS"
     local ARGS="$BARGS MARKETING_VERSION=$VER"
-    local OPA="build/$APP.$VER.ipa"
   fi
+  local OPA="build/$APP.$VER.ipa"
 
   _mkipa() {
     p=Payload
@@ -35,7 +36,7 @@ _main() {
   [[ -f "build.xcarchive" ]] && rm -r build.xcarchive
   echo "::group::Build $BDT"
   echo "[$VER] Building.."
-  set -o pipefail && xcodebuild $ARGS | tee "build/$VER.log" | xcbeautify --renderer github-actions
+  NSUnbufferedIO=YES set -o pipefail && xcodebuild $ARGS | tee "build/$VER.log" | xcbeautify --renderer github-actions
   echo "[$VER] Archiving.."
   xz -e "build/$VER.log"
   _mkipa "$OUT"
