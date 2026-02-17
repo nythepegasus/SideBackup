@@ -78,6 +78,7 @@ struct ContentView: View {
             print(URL.groupContainers)
         }
         .onOpenURL { url in
+            // TODO: validation
             guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
             print(url)
             print(components.queryItems ?? [])
