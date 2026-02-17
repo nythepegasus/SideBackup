@@ -11,6 +11,10 @@ on:
     branches:
       - '**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build and Archive
@@ -111,6 +115,7 @@ jobs:
         with:
           # This snippet is public-domain, taken from
           # https://github.com/oprypin/nightly.link/blob/master/.github/workflows/pr-comment.yml
+          # slightly modified by nythepegasus
           script: |
             async function upsertComment(owner, repo, issue_number, purpose, body) {
               const {data: comments} = await github.rest.issues.listComments(
@@ -135,7 +140,7 @@ jobs:
             }
 
             const {owner, repo} = context.repo;
-            const run_id = ${{github.event.workflow_run.id}};
+            const run_id = ${{ github.run_id }};
 
             const artifacts = await github.paginate(
               github.rest.actions.listWorkflowRunArtifacts, {owner, repo, run_id});
@@ -149,5 +154,4 @@ jobs:
 
             core.info("Review thread message body:", body);
 
-            await upsertComment(owner, repo, ${{ github.event.pull_request.number }},
-              "nightly-link", body);
+            await upsertComment(owner, repo, ${{ github.event.pull_request.number }}, "nightly-link", body);
