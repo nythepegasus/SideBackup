@@ -7,6 +7,7 @@ on:
     tags:
       - '*.*.*'
   pull_request:
+    types: [opened, synchronize, reopened]
     branches:
       - '**'
 
@@ -106,7 +107,7 @@ jobs:
 
       - name: Upload PR Comment
         uses: actions/github-script@v8
-        if: github.event.workflow_run.event == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
         with:
           # This snippet is public-domain, taken from
           # https://github.com/oprypin/nightly.link/blob/master/.github/workflows/pr-comment.yml
@@ -148,5 +149,5 @@ jobs:
 
             core.info("Review thread message body:", body);
 
-            await upsertComment(owner, repo, ${{ github.event.workflow_run.pull_request.number }},
+            await upsertComment(owner, repo, ${{ github.event.pull_request.number }},
               "nightly-link", body);
