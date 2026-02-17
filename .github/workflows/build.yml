@@ -17,6 +17,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false || github.ref_name == 'main' || github.ref_name == 'develop'
     name: Build and Archive
     runs-on: macos-latest
 
