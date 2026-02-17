@@ -42,8 +42,8 @@ jobs:
 
       - uses: irgaly/xcode-cache@v1.9.2
         with:
-          key: xcode-cache-deriveddata-${{ github.workflow }}-${{ github.sha }}
-          restore-keys: xcode-cache-dereviddata-${{ github.workflow }}-
+          key: xcode-cache-deriveddata-${{ github.steps.build_type.outputs.type }}-${{ github.base_ref }}
+          restore-keys: xcode-cache-dereviddata-${{ github.steps.build_type.outputs.type }}-${{ github.base_ref }}
 
       - name: Build
         run: ./.github/makeipa ${{ steps.build_type.outputs.type }} ${{ github.head_ref }}
