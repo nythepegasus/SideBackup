@@ -9,8 +9,12 @@ _main() {
   local SDR="build.xcarchive/dSYMs"
   local SYM="$APP.app.dSYM"
   local BVR=$(grep 'MARKETING' Build.xcconfig | awk '{ print $3 }')
-  local GB=$(git branch --show-current | sed 's/\//_/g')
   local GS=$(git rev-parse --short HEAD)
+  if [[ -z "$3" ]]; then
+    local GB=$(git branch --show-current | sed 's/\//_/g')
+  else
+    local GB=$(echo "$3" | sed 's/\//_/g')
+  fi
   local BARGS="archive\
  -scheme $APP\
  -archivePath build.xcarchive\
