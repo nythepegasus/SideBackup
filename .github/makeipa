@@ -36,7 +36,7 @@ _main() {
   [[ -f "build.xcarchive" ]] && rm -r build.xcarchive
   echo "::group::Build $BDT"
   echo "[$VER] Building.."
-  NSUnbufferedIO=YES set -o pipefail && xcodebuild $ARGS | tee "build/$VER.log" | xcbeautify --renderer github-actions
+  NSUnbufferedIO=YES set -o pipefail && xcodebuild $ARGS 2>&1 | tee "build/$VER.log" | xcbeautify --renderer github-actions
   echo "[$VER] Archiving.."
   xz -e "build/$VER.log"
   _mkipa "$OUT"
