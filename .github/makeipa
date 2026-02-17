@@ -4,16 +4,16 @@ set -e
 
 _main() {
   local BDT="${1:-nightly}"
-  local APP="${2:-SideBackup}"
+  local APP="${3:-SideBackup}"
   local OUT="build.xcarchive/Products/Applications/$APP.app"
   local SDR="build.xcarchive/dSYMs"
   local SYM="$APP.app.dSYM"
   local BVR=$(grep 'MARKETING' Build.xcconfig | awk '{ print $3 }')
   local GS=$(git rev-parse --short HEAD)
-  if [[ -z "$3" ]]; then
-    local GB=$(git branch --show-current | sed 's/\//_/g')
+  if [[ -n "$2" ]]; then
+    local GB=$(echo "$2" | sed 's/\//_/g')
   else
-    local GB=$(echo "$3" | sed 's/\//_/g')
+    local GB=$(git branch --show-current | sed 's/\//_/g')
   fi
   local BARGS="archive\
  -scheme $APP\
