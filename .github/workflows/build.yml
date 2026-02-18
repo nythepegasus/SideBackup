@@ -12,25 +12,16 @@ on:
       - '**'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.base_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   build:
-    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false || github.ref_name == 'main' || github.ref_name == 'develop'
+    if: (github.event_name == 'pull_request' && github.event.pull_request.draft == false) || (github.ref_name == 'main' || github.ref_name == 'develop')
     name: Build and Archive
     runs-on: macos-latest
 
     steps:
-      - name: Determine Build Type
-        id: build_type
-        run: |
-          if [[ "${GITHUB_REF}" == ref/tags/* ]]; then
-            echo "type=release" >> $GITHUB_OUTPUT
-          else
-            echo "type=nightly" >> $GITHUB_OUTPUT
-          fi
-
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
@@ -41,44 +32,39 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - uses: irgaly/xcode-cache@v1.9.2
+      - name: Set Up Xcode Cache
+        uses: irgaly/xcode-cache@v1.9.2
         with:
-          key: xcode-cache-deriveddata-${{ steps.build_type.outputs.type }}-${{ github.ref_name }}
-          restore-keys: xcode-cache-dereviddata-${{ steps.build_type.outputs.type }}-${{ github.ref_name }}
+          key: xcode-cache-deriveddata-${{ github.base_ref || github.ref_name }}
+          restore-keys: xcode-cache-dereviddata-${{ github.base_ref || github.ref_name }}
 
       - name: Build
-        run: ./.github/makeipa ${{ steps.build_type.outputs.type }} ${{ github.head_ref }}
-
-      - name: Get Artifacts
-        id: artifacts
-        run: |
-          echo "ipa=$(basename build/*ipa)" >> $GITHUB_OUTPUT
-          echo "log=$(basename build/*log*)" >> $GITHUB_OUTPUT
-          echo "sym=$(basename build/*SYM*)" >> $GITHUB_OUTPUT
+        id: build
+        run: ./.github/makeipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ steps.artifacts.outputs.ipa }}
-          path: build/*ipa
+          name: ${{ steps.build.outputs.ipa }}
+          path: build/${{ steps.build.outputs.ipa }}
           compression-level: 0
 
       - name: Upload Build Log
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ steps.artifacts.outputs.log }}
-          path: build/*log*
+          name: ${{ steps.build.outputs.log }}
+          path: build/${{ steps.build.outputs.log }}
           compression-level: 0
 
       - name: Upload dSYM
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ steps.artifacts.outputs.sym }}
-          path: build/*SYM*
+          name: ${{ steps.build.outputs.sym }}
+          path: build/${{ steps.build.outputs.sym }}
           compression-level: 0
 
       - name: Upload nightly
-        if: github.ref_name == 'main' || github.ref_name == 'develop'
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'develop')
         uses: altemiq/update-existing-release@v1.3.5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -87,9 +73,9 @@ jobs:
           replace: true
           prerelease: true
           files: >
-            build/${{ steps.artifacts.outputs.log }}
-            build/${{ steps.artifacts.outputs.sym }}
-            build/${{ steps.artifacts.outputs.ipa }}
+            build/${{ steps.build.outputs.log }}
+            build/${{ steps.build.outputs.sym }}
+            build/${{ steps.build.outputs.ipa }}
           body: |
             Automated nightly build from commit ${{ github.sha }}
 
@@ -102,9 +88,9 @@ jobs:
         uses: softprops/action-gh-release@v2.5.0
         with:
           files: |
-            build/${{ steps.artifacts.outputs.log }}
-            build/${{ steps.artifacts.outputs.sym }}
-            build/${{ steps.artifacts.outputs.ipa }}
+            build/${{ steps.build.outputs.log }}
+            build/${{ steps.build.outputs.sym }}
+            build/${{ steps.build.outputs.ipa }}
           draft: true
           prerelease: false
         env:
