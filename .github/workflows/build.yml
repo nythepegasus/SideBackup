@@ -42,26 +42,18 @@ jobs:
         id: build
         run: ./.github/makeipa
 
-      - name: Upload IPA
-        uses: actions/upload-artifact@v6
+      - name: Upload Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2.5.0
         with:
-          name: ${{ steps.build.outputs.ipa }}
-          path: build/${{ steps.build.outputs.ipa }}
-          compression-level: 0
-
-      - name: Upload Build Log
-        uses: actions/upload-artifact@v6
-        with:
-          name: ${{ steps.build.outputs.log }}
-          path: build/${{ steps.build.outputs.log }}
-          compression-level: 0
-
-      - name: Upload dSYM
-        uses: actions/upload-artifact@v6
-        with:
-          name: ${{ steps.build.outputs.sym }}
-          path: build/${{ steps.build.outputs.sym }}
-          compression-level: 0
+          files: |
+            build/${{ steps.build.outputs.log }}
+            build/${{ steps.build.outputs.sym }}
+            build/${{ steps.build.outputs.ipa }}
+          draft: true
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload nightly
         if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'develop')
@@ -83,18 +75,29 @@ jobs:
             **Commit:** ${{ github.event.head_commit.message }}
             **Built:** ${{ github.event.head_commit.timestamp }}
 
-      - name: Upload Release
-        if: github.ref_type == 'tag'
-        uses: softprops/action-gh-release@v2.5.0
+      - name: Upload IPA
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+        uses: actions/upload-artifact@v6
         with:
-          files: |
-            build/${{ steps.build.outputs.log }}
-            build/${{ steps.build.outputs.sym }}
-            build/${{ steps.build.outputs.ipa }}
-          draft: true
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: ${{ steps.build.outputs.ipa }}
+          path: build/${{ steps.build.outputs.ipa }}
+          compression-level: 0
+
+      - name: Upload Build Log
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ steps.build.outputs.log }}
+          path: build/${{ steps.build.outputs.log }}
+          compression-level: 0
+
+      - name: Upload dSYM
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ steps.build.outputs.sym }}
+          path: build/${{ steps.build.outputs.sym }}
+          compression-level: 0
 
       - name: Upload PR Comment
         uses: actions/github-script@v8
